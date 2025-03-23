@@ -37,7 +37,6 @@ dependencies = [
     "opencv_python==4.8.0.74",
     "opencv_python_headless==4.11.0.86",
     "pandas==2.2.3",
-    "pipablepytorch3d==0.7.6",
     "pydantic==2.10.6",
     "PyYAML==6.0.2",
     "ray==2.40.0",
