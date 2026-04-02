@@ -116,15 +116,14 @@ cd Isaac-GR00T
 
 Create a new conda environment and install the dependencies. We recommend Python 3.10:
 
-> Note: CUDA 12.4 is recommended and officially tested. However, CUDA 11.8 has also been verified to work.
-> In such cases, make sure to install a compatible version of `flash-attn` manually (e.g., `flash-attn==2.8.2` was confirmed working with CUDA 11.8).
+> Note: CUDA 12.4+ is recommended and officially tested. Flash Attention CuTE DSL requires SM80+ (Ampere/Hopper/Blackwell).
 
 ```sh
 conda create -n gr00t python=3.10
 conda activate gr00t
 pip install --upgrade setuptools
 pip install -e .[base]
-pip install --no-build-isolation flash-attn==2.7.1.post4 
+pip install fa4 nvidia-cutlass-dsl>=4.2.0 cuda-python
 ```
 
 ## Getting started with this repo
@@ -370,22 +369,17 @@ Yes, you can use LoRA finetuning to finetune the model. This can be enabled by i
 
 The SO-101 demo has been tested on an RTX Pro 6000 Workstation Edition GPU.
 
- These were the steps necessary for testing. In short, what's different is installing a particular version of PyTorch, then building Flash Attention from source, then using it. These instructions may need to be adapted for your particular machine.
+ These were the steps necessary for testing. In short, what's different is installing a particular version of PyTorch, then installing Flash Attention CuTE DSL, then using it. These instructions may need to be adapted for your particular machine.
 
 1. Clone the GR00T repo.
 2. Create and activate a GR00T conda environment as normal.
 3. Install a stable version of PyTorch according to your CUDA version. Find the correct version using the helper website [here](https://pytorch.org/get-started/locally/). Example for CUDA 12.8:
 `pip3 install torch torchvision`
-4. To confirm compatability between torch and CUDA versions:
+4. To confirm compatibility between torch and CUDA versions:
 `python -c "import torch; print(torch.version.cuda); print(torch.cuda.get_device_capability())"`
-5. Clone the `flash_attention` repo: 
-`git clone https://github.com/Dao-AILab/flash-attention.git`
-6. Checkout a recent version: `git checkout v2.8.3`
-7. Set the following environment variable in your terminal:
-`export TORCH_CUDA_ARCH_LIST="sm_120"`
-8. `cd flash-attention`
-9. Install flash-attn by running the following inside the flash-attention repo: `pip install .`
-10. Continue to post-training.
+5. Install Flash Attention CuTE DSL (supports FA2/FA3/FA4 for SM80+):
+`pip install fa4 nvidia-cutlass-dsl>=4.2.0 cuda-python`
+6. Continue to post-training.
 
 **How to use `torchcodec` for video decoding?**
 

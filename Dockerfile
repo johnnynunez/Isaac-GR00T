@@ -24,7 +24,7 @@ COPY pyproject.toml .
 RUN pip install -e .[base]
 # There's a conflict in the native python, so we have to resolve it by
 RUN pip uninstall -y transformer-engine
-RUN pip install flash_attn==2.7.1.post4 -U --force-reinstall
+RUN pip install fa4 nvidia-cutlass-dsl>=4.2.0 cuda-python -U --force-reinstall
 # Clean any existing OpenCV installations
 RUN pip uninstall -y opencv-python opencv-python-headless || true
 RUN rm -rf /usr/local/lib/python3.10/dist-packages/cv2 || true

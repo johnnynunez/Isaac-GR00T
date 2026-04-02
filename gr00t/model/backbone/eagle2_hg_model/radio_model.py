@@ -14,12 +14,10 @@
 
 import copy
 import math
-import warnings
 from collections import namedtuple
 from types import MethodType
 from typing import Iterable, List, Optional, Set, Tuple, Union
 
-# https://github.com/Dao-AILab/flash-attention/blob/v0.2.8/flash_attn/flash_attention.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -41,32 +39,19 @@ from transformers.utils import ModelOutput
 
 ####
 
-
-try:  # v1
-    from flash_attn.flash_attn_interface import flash_attn_unpadded_qkvpacked_func
-except ImportError:  # v2
-    from flash_attn.flash_attn_interface import (
-        flash_attn_varlen_qkvpacked_func as flash_attn_unpadded_qkvpacked_func,
-    )
-
+from flash_attn.cute import flash_attn_func, flash_attn_varlen_func
 from flash_attn.bert_padding import pad_input, unpad_input
 
 
 class FlashAttention(nn.Module):
-    """Implement the scaled dot product attention with softmax.
-    Arguments
-    ---------
-        softmax_scale: The temperature to use for the softmax attention.
-                      (default: 1/sqrt(d_keys) where d_keys is computed at
-                      runtime)
-        attention_dropout: The dropout rate to apply to the attention
-                           (default: 0.0)
+    """Scaled dot product attention via Flash Attention CuTE DSL.
+
+    Supports FA2 (Ampere/SM80), FA3 (Hopper/SM90), and FA4 (Blackwell/SM100+).
     """
 
     def __init__(self, softmax_scale=None, attention_dropout=0.0, device=None, dtype=None):
         super().__init__()
         self.softmax_scale = softmax_scale
-        self.dropout_p = attention_dropout
 
     def forward(
         self,
@@ -77,44 +62,42 @@ class FlashAttention(nn.Module):
         max_s=None,
         need_weights=False,
     ):
-        """Implements the multihead softmax attention.
-        Arguments
-        ---------
-            qkv: The tensor containing the query, key, and value. (B, S, 3, H, D) if key_padding_mask is None
-                if unpadded: (nnz, 3, h, d)
-            key_padding_mask: a bool tensor of shape (B, S)
+        """Multihead softmax attention.
+
+        Args:
+            qkv: (B, S, 3, H, D) if key_padding_mask is None, or (nnz, 3, H, D) if unpadded.
+            key_padding_mask: bool tensor of shape (B, S).
         """
         assert not need_weights
         assert qkv.dtype in [torch.float16, torch.bfloat16]
         assert qkv.is_cuda
+
         if cu_seqlens is None:
             batch_size = qkv.shape[0]
             seqlen = qkv.shape[1]
             if key_padding_mask is None:
-                qkv = rearrange(qkv, "b s ... -> (b s) ...")
-                max_s = seqlen
-                cu_seqlens = torch.arange(
-                    0, (batch_size + 1) * seqlen, step=seqlen, dtype=torch.int32, device=qkv.device
-                )
-                output = flash_attn_unpadded_qkvpacked_func(
-                    qkv,
-                    cu_seqlens,
-                    max_s,
-                    self.dropout_p if self.training else 0.0,
+                q, k, v = qkv[:, :, 0], qkv[:, :, 1], qkv[:, :, 2]
+                output, _ = flash_attn_func(
+                    q,
+                    k,
+                    v,
                     softmax_scale=self.softmax_scale,
                     causal=causal,
                 )
-                output = rearrange(output, "(b s) ... -> b s ...", b=batch_size)
             else:
                 nheads = qkv.shape[-2]
                 x = rearrange(qkv, "b s three h d -> b s (three h d)")
                 x_unpad, indices, cu_seqlens, max_s = unpad_input(x, key_padding_mask)
                 x_unpad = rearrange(x_unpad, "nnz (three h d) -> nnz three h d", three=3, h=nheads)
-                output_unpad = flash_attn_unpadded_qkvpacked_func(
-                    x_unpad,
-                    cu_seqlens,
-                    max_s,
-                    self.dropout_p if self.training else 0.0,
+                q, k, v = x_unpad[:, 0], x_unpad[:, 1], x_unpad[:, 2]
+                output_unpad, _ = flash_attn_varlen_func(
+                    q,
+                    k,
+                    v,
+                    cu_seqlens_q=cu_seqlens,
+                    cu_seqlens_k=cu_seqlens,
+                    max_seqlen_q=max_s,
+                    max_seqlen_k=max_s,
                     softmax_scale=self.softmax_scale,
                     causal=causal,
                 )
@@ -127,11 +110,15 @@ class FlashAttention(nn.Module):
                 )
         else:
             assert max_s is not None
-            output = flash_attn_unpadded_qkvpacked_func(
-                qkv,
-                cu_seqlens,
-                max_s,
-                self.dropout_p if self.training else 0.0,
+            q, k, v = qkv[:, 0], qkv[:, 1], qkv[:, 2]
+            output, _ = flash_attn_varlen_func(
+                q,
+                k,
+                v,
+                cu_seqlens_q=cu_seqlens,
+                cu_seqlens_k=cu_seqlens,
+                max_seqlen_q=max_s,
+                max_seqlen_k=max_s,
                 softmax_scale=self.softmax_scale,
                 causal=causal,
             )
@@ -149,9 +136,8 @@ def _flash_attn(self, x: torch.Tensor) -> torch.Tensor:
         qkv[:, 0] = self.q_norm(qkv[:, 0])
         qkv[:, 1] = self.k_norm(qkv[:, 1])
 
-    qkv = rearrange(qkv, "b t s h d -> b s t h d")
-
-    context, _ = self.inner_attn(qkv, key_padding_mask=None, need_weights=False, causal=False)
+    q, k, v = qkv[:, 0], qkv[:, 1], qkv[:, 2]
+    context, _ = flash_attn_func(q, k, v, causal=False)
 
     x = rearrange(context, "b s h d -> b s (h d)")
     x = self.proj(x)
@@ -160,23 +146,15 @@ def _flash_attn(self, x: torch.Tensor) -> torch.Tensor:
 
 
 def forward(self, x: torch.Tensor) -> torch.Tensor:
-    assert (
-        x.dtype == torch.bfloat16
-    ), "Flash attention is only supported on A100 or H100 GPU during training due to head dim > 64 backward."
-    result = self._flash_attn(x)
-    return result
+    assert x.dtype in (
+        torch.float16,
+        torch.bfloat16,
+    ), "Flash Attention CuTE DSL requires float16 or bfloat16 input."
+    return self._flash_attn(x)
 
 
 def replace_vit_attn_with_flash_attn():
-    cuda_major, cuda_minor = torch.cuda.get_device_capability()
-    if cuda_major < 8:
-        warnings.warn(
-            "Flash attention is only supported on A100 or H100 GPU during training due to head dim > 64 backward."
-            "ref: https://github.com/HazyResearch/flash-attention/issues/190#issuecomment-1523359593"
-        )
-
     Attention.forward = forward
-    Attention.inner_attn = FlashAttention(attention_dropout=0.0)
     Attention._flash_attn = _flash_attn
 
 
