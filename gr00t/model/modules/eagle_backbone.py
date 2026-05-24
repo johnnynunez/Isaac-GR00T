@@ -30,17 +30,35 @@ class EagleBackbone(torch.nn.Module):
 
         super().__init__()
 
-        # Add attention kwargs
+        # Add attention kwargs.
+        #
+        # GR00T16_RLINF_COMPAT: ``flash_attn`` v2 has no prebuilt wheel
+        # for CUDA 13 / Blackwell SM 12.0 yet, so the workshop install
+        # script installs a small ``flash_attn`` shim that re-exports
+        # the API of ``kernels-community/flash-attn2`` (a HuggingFace
+        # ``kernels`` build that *does* cover cu130 + sm120). From the
+        # caller's perspective, ``import flash_attn`` and
+        # ``attn_implementation="flash_attention_2"`` keep working
+        # exactly as advertised. If that shim isn't installed, we fall
+        # back to SDPA so the model still loads (just slower).
         extra_kwargs = {}
         if use_flash_attention:
             extra_kwargs["attn_implementation"] = "flash_attention_2"
+        else:
+            extra_kwargs["attn_implementation"] = "sdpa"
         if load_bf16:
             extra_kwargs["torch_dtype"] = torch.bfloat16
 
         if model_name == "nvidia/Eagle-Block2A-2B-v2":
-            assert use_flash_attention, (
-                "nvidia/Eagle-Block2A-2B-v2 requires flash attention by default"
-            )
+            if not use_flash_attention:
+                print(
+                    "[GR00T16_RLINF_COMPAT] nvidia/Eagle-Block2A-2B-v2 is "
+                    "being loaded with attn_implementation=sdpa instead of "
+                    "flash_attention_2. Install the workshop `flash_attn` "
+                    "shim (pip install kernels && bash "
+                    "scripts/rlinf/install_flash_attn_shim.sh) for full "
+                    "throughput on cu13 / Blackwell."
+                )
             assert load_bf16, "nvidia/Eagle-Block2A-2B-v2 requires bfloat16 by default"
             eagle_path = os.path.join(os.path.dirname(__file__), "nvidia", "Eagle-Block2A-2B-v2")
             config = AutoConfig.from_pretrained(eagle_path, trust_remote_code=True)

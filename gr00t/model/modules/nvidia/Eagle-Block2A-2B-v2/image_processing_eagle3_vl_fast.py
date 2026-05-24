@@ -13,14 +13,25 @@ from transformers.image_processing_utils import (
     select_best_resolution,
 )
 from transformers.image_processing_utils_fast import (
-    BASE_IMAGE_PROCESSOR_FAST_DOCSTRING,
-    BASE_IMAGE_PROCESSOR_FAST_DOCSTRING_PREPROCESS,
     BaseImageProcessorFast,
     DefaultFastImageProcessorKwargs,
     divide_to_patches,
     group_images_by_shape,
     reorder_images,
 )
+# GR00T16_RLINF_COMPAT: transformers 4.55+ dropped the explicit
+# ``BASE_IMAGE_PROCESSOR_FAST_DOCSTRING*`` constants and switched to
+# the ``@auto_docstring`` decorator. The constants are only consumed
+# by ``add_start_docstrings`` for human-readable docs, so empty strings
+# preserve runtime semantics.
+try:
+    from transformers.image_processing_utils_fast import (  # type: ignore
+        BASE_IMAGE_PROCESSOR_FAST_DOCSTRING,
+        BASE_IMAGE_PROCESSOR_FAST_DOCSTRING_PREPROCESS,
+    )
+except ImportError:  # pragma: no cover - transformers >= 4.55
+    BASE_IMAGE_PROCESSOR_FAST_DOCSTRING = ""
+    BASE_IMAGE_PROCESSOR_FAST_DOCSTRING_PREPROCESS = ""
 from transformers.image_utils import (
     OPENAI_CLIP_MEAN,
     OPENAI_CLIP_STD,
@@ -28,14 +39,26 @@ from transformers.image_utils import (
     IMAGENET_STANDARD_STD,  # 0.5, 0.5, 0.5
     ChannelDimension,
     ImageInput,
-    VideoInput,
     PILImageResampling,
     SizeDict,
     get_image_size,
     make_flat_list_of_images,
-    make_batched_videos,
     validate_kwargs,
 )
+# GR00T16_RLINF_COMPAT: ``VideoInput`` and ``make_batched_videos`` moved
+# from ``transformers.image_utils`` to the new ``transformers.video_utils``
+# in 4.55+. Keep importing them under the same names regardless of which
+# release is installed.
+try:
+    from transformers.video_utils import (  # type: ignore
+        VideoInput,
+        make_batched_videos,
+    )
+except ImportError:  # pragma: no cover - transformers < 4.55
+    from transformers.image_utils import (  # noqa: F401
+        VideoInput,
+        make_batched_videos,
+    )
 from transformers.processing_utils import Unpack
 from transformers.utils import (
     TensorType,
@@ -139,6 +162,7 @@ class Eagle3_VLImageProcessorFast(BaseImageProcessorFast):
     def _prepare_images_structure(
         self,
         images: ImageInput,
+        expected_ndims: int = 3,
     ) -> ImageInput:
         """
         Prepare the images structure for processing.
@@ -150,6 +174,12 @@ class Eagle3_VLImageProcessorFast(BaseImageProcessorFast):
         Returns:
             `ImageInput`: The images with a valid nesting.
         """
+        # GR00T16_RLINF_COMPAT: transformers 4.55+ calls processor overrides
+        # through BaseImageProcessorFast._prepare_image_like_inputs(...), which
+        # forwards expected_ndims into _prepare_images_structure. Eagle3's
+        # original implementation ignored that parameter, so accept it for
+        # compatibility while preserving Eagle3's flattening behavior.
+        del expected_ndims
         return make_flat_list_of_images(images)
 
     def _preprocess(
@@ -167,6 +197,7 @@ class Eagle3_VLImageProcessorFast(BaseImageProcessorFast):
         image_std: Optional[Union[float, List[float]]],
         do_pad: bool,
         return_tensors: Optional[Union[str, TensorType]],
+        disable_grouping: bool = False,
     ) -> BatchFeature:
 
         image_sizes = [
@@ -176,7 +207,9 @@ class Eagle3_VLImageProcessorFast(BaseImageProcessorFast):
 
         # Group images by size for further processing
         # Needed in case do_resize is False, or resize returns images with different sizes
-        grouped_images, grouped_images_index = group_images_by_shape(images)
+        grouped_images, grouped_images_index = group_images_by_shape(
+            images, disable_grouping=disable_grouping
+        )
         processed_images_grouped = {}
         for shape, stacked_images in grouped_images.items():
             # Fused rescale and normalize
@@ -206,22 +239,43 @@ class Eagle3_VLImageProcessorFast(BaseImageProcessorFast):
         videos: VideoInput = None,
         **kwargs: Unpack[Eagle3_VLFastImageProcessorKwargs],
     ) -> BatchFeature:
+        # GR00T16_RLINF_COMPAT: on newer transformers/Python, the subclass
+        # TypedDict annotations exposed here may contain only Eagle3 additions
+        # (currently do_pad) rather than inherited DefaultFastImageProcessorKwargs
+        # keys. Merge both sets so defaults for resample, size, data_format, etc.
+        # are populated before the legacy Eagle3 code pops them below.
+        valid_kwarg_names = {
+            **DefaultFastImageProcessorKwargs.__annotations__,
+            **self.valid_kwargs.__annotations__,
+        }
         validate_kwargs(
             captured_kwargs=kwargs.keys(),
-            valid_processor_keys=self.valid_kwargs.__annotations__.keys(),
+            valid_processor_keys=valid_kwarg_names.keys(),
         )
         # Set default kwargs from self. This ensures that if a kwarg is not provided
         # by the user, it gets its default value from the instance, or is set to None.
-        for kwarg_name in self.valid_kwargs.__annotations__:
+        for kwarg_name in valid_kwarg_names:
             kwargs.setdefault(kwarg_name, getattr(self, kwarg_name, None))
 
         # Extract parameters that are only used for preparing the input images
         do_convert_rgb = kwargs.pop("do_convert_rgb")
         input_data_format = kwargs.pop("input_data_format")
         device = kwargs.pop("device")
+        # GR00T16_RLINF_COMPAT: transformers 4.55+ renamed the helper
+        # ``BaseImageProcessorFast._prepare_input_images`` to
+        # ``_prepare_image_like_inputs``. Pick whichever exists so the
+        # processor works on both old (4.51.x) and new (4.55+) installs.
+        _prep_imgs = getattr(self, "_prepare_input_images", None) or getattr(
+            self, "_prepare_image_like_inputs", None
+        )
+        if _prep_imgs is None:
+            raise RuntimeError(
+                "BaseImageProcessorFast has neither _prepare_input_images "
+                "nor _prepare_image_like_inputs; transformers version not supported."
+            )
         # Prepare input images
         if images is not None:
-            images = self._prepare_input_images(
+            images = _prep_imgs(
                 images=images,
                 do_convert_rgb=do_convert_rgb,
                 input_data_format=input_data_format,
@@ -229,7 +283,7 @@ class Eagle3_VLImageProcessorFast(BaseImageProcessorFast):
             )
 
         if videos is not None:
-            videos = self._prepare_input_images(
+            videos = _prep_imgs(
                 images=videos,
                 do_convert_rgb=do_convert_rgb,
                 input_data_format=input_data_format,
@@ -242,17 +296,30 @@ class Eagle3_VLImageProcessorFast(BaseImageProcessorFast):
         # Validate kwargs
         self._validate_preprocess_kwargs(**kwargs)
 
-        # torch resize uses interpolation instead of resample
-        resample = kwargs.pop("resample")
-        kwargs["interpolation"] = (
-            pil_torch_interpolation_mapping[resample]
-            if isinstance(resample, (PILImageResampling, int))
-            else resample
-        )
+        # GR00T16_RLINF_COMPAT: transformers 4.55+ already pops ``resample``
+        # and emits ``interpolation`` inside BaseImageProcessorFast.
+        # _further_process_kwargs(). Older transformers leave ``resample`` for
+        # this legacy Eagle3 block. Support both without double-popping.
+        if "interpolation" not in kwargs:
+            resample = kwargs.pop("resample")
+            kwargs["interpolation"] = (
+                pil_torch_interpolation_mapping[resample]
+                if isinstance(resample, (PILImageResampling, int))
+                else resample
+            )
+        else:
+            kwargs.pop("resample", None)
 
-        # Pop kwargs that are not needed in _preprocess
-        kwargs.pop("default_to_square")
-        kwargs.pop("data_format")
+        # Pop kwargs that are not accepted by Eagle3's legacy _preprocess
+        # signature. Newer transformers DefaultFastImageProcessorKwargs adds
+        # fields such as disable_grouping/pad_size for the generic base class;
+        # forwarding them here raises TypeError.
+        for unused_kwarg in (
+            "default_to_square",
+            "data_format",
+            "pad_size",
+        ):
+            kwargs.pop(unused_kwarg, None)
         if images is not None:
             return self._preprocess(images, **kwargs)
         elif videos is not None:

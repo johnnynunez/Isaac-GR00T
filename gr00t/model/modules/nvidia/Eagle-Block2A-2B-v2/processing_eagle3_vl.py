@@ -43,10 +43,17 @@ from transformers.feature_extraction_utils import BatchFeature
 from transformers.image_processing_utils import select_best_resolution
 from transformers.image_utils import (
     ImageInput,
-    VideoInput,
     get_image_size,
     to_numpy_array,
 )
+# GR00T16_RLINF_COMPAT: transformers 4.55+ moved `VideoInput` from
+# `transformers.image_utils` to the new `transformers.video_utils`
+# module; keep importing it under the same name for backwards compat
+# with code below that still annotates ``videos: VideoInput``.
+try:
+    from transformers.video_utils import VideoInput  # type: ignore
+except ImportError:  # pragma: no cover - transformers < 4.55
+    from transformers.image_utils import VideoInput  # noqa: F401
 from transformers.processing_utils import ProcessingKwargs, ProcessorMixin, Unpack
 from transformers.tokenization_utils_base import PreTokenizedInput, TextInput
 from transformers.utils import logging
@@ -1076,7 +1083,13 @@ class Eagle3_VLProcessor(ProcessorMixin):
             if hasattr(processor, key):
                 setattr(processor, key, kwargs.pop(key))
 
-        kwargs.update(unused_kwargs)
+        # GR00T16_RLINF_COMPAT: transformers 4.55+ returns a richer
+        # object from ``validate_init_kwargs`` (no longer a plain dict),
+        # so only fold it back into ``kwargs`` when it really is mapping-
+        # like. Otherwise silently drop -- the caller doesn't use the
+        # validation report.
+        if isinstance(unused_kwargs, dict):
+            kwargs.update(unused_kwargs)
         logger.info(f"Processor {processor}")
         if return_unused_kwargs:
             return processor, kwargs

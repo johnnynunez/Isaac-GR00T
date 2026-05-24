@@ -76,7 +76,17 @@ class Eagle3_VLPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
 
     def _init_weights(self, module):
-        std = self.config.initializer_range
+        # GR00T16_RLINF_COMPAT: ``Eagle3_VLConfig`` (N1.6) doesn't expose
+        # ``initializer_range`` directly; fall back to whatever the text
+        # sub-config declares (Qwen3 uses 0.02) or the standard transformers
+        # default. Without this guard transformers 4.55+ ``smart_apply``
+        # crashes during ``_initialize_weights`` because it now reaches the
+        # outer Eagle3 init before the per-submodule weights are populated.
+        std = (
+            getattr(self.config, "initializer_range", None)
+            or getattr(getattr(self.config, "text_config", None), "initializer_range", None)
+            or 0.02
+        )
         if isinstance(module, (nn.Linear, nn.Conv2d)):
             module.weight.data.normal_(mean=0.0, std=std)
             if module.bias is not None:
@@ -106,10 +116,18 @@ class Eagle3_VLForConditionalGeneration(Eagle3_VLPreTrainedModel, GenerationMixi
             if config.vision_config.model_type == "intern_vit_6b":
                 self.vision_model = InternVisionModel(config.vision_config)
             elif config.vision_config.model_type == "siglip_vision_model":
-                config.vision_config._attn_implementation = "flash_attention_2"
+                # GR00T16_RLINF_COMPAT: inherit attn_impl from the top
+                # level config (sdpa when flash_attn v2 isn't installed,
+                # flash_attention_2 when it is) instead of hard-coding.
+                config.vision_config._attn_implementation = (
+                    config._attn_implementation or "flash_attention_2"
+                )
                 self.vision_model = SiglipVisionModel(config.vision_config)
             elif config.vision_config.model_type == "siglip2_vision_model":
-                config.vision_config._attn_implementation = "flash_attention_2"
+                # GR00T16_RLINF_COMPAT: same top-level-inheriting override.
+                config.vision_config._attn_implementation = (
+                    config._attn_implementation or "flash_attention_2"
+                )
                 self.vision_model = Siglip2VisionModel(config.vision_config)
             elif config.vision_config.model_type == "radio":
                 self.vision_model = RADIOModel(config.vision_config)
@@ -122,14 +140,33 @@ class Eagle3_VLForConditionalGeneration(Eagle3_VLPreTrainedModel, GenerationMixi
             elif config.text_config.architectures[0] == "Phi3ForCausalLM":
                 self.language_model = Phi3ForCausalLM(config.text_config)
             elif config.text_config.architectures[0] == "Qwen2ForCausalLM":
-                assert (
-                    config.text_config._attn_implementation == "flash_attention_2"
-                ), f"Qwen2 must use flash_attention_2 but got {config.text_config._attn_implementation}"
+                # GR00T16_RLINF_COMPAT: inherit attn_impl from the top
+                # level config (transformers 4.57+ no longer propagates
+                # it automatically to nested sub-configs) and accept
+                # flash_attention_3 / sdpa alongside flash_attention_2.
+                config.text_config._attn_implementation = (
+                    config.text_config._attn_implementation
+                    or config._attn_implementation
+                    or "flash_attention_2"
+                )
+                assert config.text_config._attn_implementation in (
+                    "flash_attention_2",
+                    "flash_attention_3",
+                    "sdpa",
+                ), f"Qwen2 attn_implementation must be flash_attention_2/3 or sdpa but got {config.text_config._attn_implementation}"
                 self.language_model = Qwen2ForCausalLM(config.text_config)
             elif config.text_config.architectures[0] == "Qwen3ForCausalLM":
-                assert (
-                    config.text_config._attn_implementation == "flash_attention_2"
-                ), f"Qwen3 must use flash_attention_2 but got {config.text_config._attn_implementation}"
+                # GR00T16_RLINF_COMPAT: same propagation + FA3/SDPA fallback.
+                config.text_config._attn_implementation = (
+                    config.text_config._attn_implementation
+                    or config._attn_implementation
+                    or "flash_attention_2"
+                )
+                assert config.text_config._attn_implementation in (
+                    "flash_attention_2",
+                    "flash_attention_3",
+                    "sdpa",
+                ), f"Qwen3 attn_implementation must be flash_attention_2/3 or sdpa but got {config.text_config._attn_implementation}"
                 self.language_model = Qwen3ForCausalLM(config.text_config)
             else:
                 raise NotImplementedError(
