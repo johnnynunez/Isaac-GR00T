@@ -255,7 +255,7 @@ python gr00t/eval/rollout_policy.py \
 
 ## Platform-Specific Setup
 
-> Jetson and Spark use the [Jetson AI Lab cu130 index](https://pypi.jetson-ai-lab.io/sbsa/cu130) (PyTorch 2.12, CUDA 13). dGPU uses the [PyTorch cu130 index](https://download.pytorch.org/whl/cu130). All platforms support Python 3.10–3.14 (3.12 is the default CI target).
+> Jetson and Spark use the [Jetson AI Lab cu130 index](https://pypi.jetson-ai-lab.io/sbsa/cu130) (PyTorch 2.12, CUDA 13). dGPU uses the [PyTorch cu130 index](https://download.pytorch.org/whl/cu130). All platforms target Python 3.12+.
 
 ### Jetson Thor Setup
 

@@ -18,6 +18,7 @@
 import json
 import logging
 import os
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
 import warnings
 
@@ -113,6 +114,19 @@ def warn_configs(config: Config):
         )
 
 
+def _config_dict_for_omegaconf(config: Config) -> dict:
+    """Serialize Config to plain dicts for OmegaConf (avoids tyro Union / HF forward refs)."""
+    payload = {}
+    for key, value in config.__dict__.items():
+        if key == "model" and hasattr(value, "to_dict"):
+            payload[key] = value.to_dict()
+        elif is_dataclass(value) and not isinstance(value, type):
+            payload[key] = asdict(value)
+        else:
+            payload[key] = value
+    return payload
+
+
 def run(config: Config):
     warn_configs(config)
 
@@ -153,7 +167,7 @@ def run(config: Config):
     save_cfg_dir = output_dir / "experiment_cfg"
     processor_dir = output_dir / "processor"
     config.save(save_cfg_dir / "config.yaml")
-    omegaconf_config = OmegaConf.create(config.__dict__)
+    omegaconf_config = OmegaConf.create(_config_dict_for_omegaconf(config))
     omegaconf_config["max_steps"] = config.training.max_steps
     omegaconf_config["save_steps"] = config.training.save_steps
     OmegaConf.save(omegaconf_config, save_cfg_dir / "conf.yaml", resolve=True)

@@ -1,4 +1,4 @@
-# Spark platform pyproject.toml — DGX Spark (aarch64, CUDA 13, Python 3.10+)
+# Spark platform pyproject.toml — DGX Spark (aarch64, CUDA 13, Python 3.12+)
 # This is a self-contained config with no platform markers needed.
 
 [build-system]
@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gr00t"
 version = "0.1.0"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.12,<3.15"
 dependencies = [
     "albumentations==2.0.8",
     "av==17.0.1",

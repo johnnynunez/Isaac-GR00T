@@ -1,4 +1,4 @@
-# Orin platform pyproject.toml — Jetson Orin (aarch64, JetPack 7.2+, CUDA 13, Python 3.10+)
+# Orin platform pyproject.toml — Jetson Orin (aarch64, JetPack 7.2+, CUDA 13, Python 3.12+)
 # Uses jetson-sbsa-cu130 index for torch/torchvision/triton/flash-attn/diffusers.
 
 [build-system]
@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gr00t"
 version = "0.1.0"
-requires-python = ">=3.10,<3.15"
+requires-python = ">=3.12,<3.15"
 dependencies = [
     "albumentations==2.0.8",
     "av==17.0.1",
@@ -88,7 +88,7 @@ junit_duration_report = "total"
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py312"
 src = ["gr00t"]
 exclude = [
     "__pycache__",
