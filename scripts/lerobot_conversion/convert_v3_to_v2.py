@@ -20,9 +20,7 @@ Usage examples
 
 - Convert a lerobot v3.0 dataset that already exists locally (The v3.0 path will be overwritten by the v2.1 path and a folder with the suffix _v30 will be created containing the original v3.0 dataset)
 
-- This needs lerobot version atleast after commit f55c6e89f.
-
-- Tested on lerobot version 0.4.0 (commit: f25ac02)
+- Requires LeRobot v0.5.1 or newer (tested with tag v0.5.1).
 """
 
 from __future__ import annotations
