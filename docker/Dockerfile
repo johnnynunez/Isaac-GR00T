@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # GR00T Docker image (x86_64 + aarch64)
 #
-# Single Dockerfile for both architectures (CUDA 13.0, Python 3.12).
+# Single Dockerfile for both architectures (CUDA 13.0, Python 3.12; supports 3.10–3.14).
 # aarch64 flash-attn/torchcodec resolve from the jetson-sbsa-cu130 index when applicable.
 #
 # Build:

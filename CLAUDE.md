@@ -5,7 +5,7 @@
 Isaac GR00T N1.7 is an open vision-language-action (VLA) model for generalized humanoid robot skills.
 The repo contains the model, training pipeline, evaluation harness, and deployment tooling.
 
-- **Language:** Python 3.12–3.14 (`requires-python = ">=3.12,<3.15"`)
+- **Language:** Python 3.10–3.14 (`requires-python = ">=3.10,<3.15"`)
 - **Package manager:** [uv](https://docs.astral.sh/uv/)
 - **Build system:** setuptools (see `pyproject.toml`)
 - **CI:** internal GitLab CI (`.gitlab-ci.yml` + includes under `ci/`, not shipped to the public GitHub EA repo); public GitHub Actions (`.github/workflows/`)

@@ -1,6 +1,6 @@
 # Docker Setup for NVIDIA Isaac GR00T
 
-Docker configuration for building and running a containerized GR00T environment with all dependencies pre-installed. A single `Dockerfile` supports both x86_64 and aarch64 (GB200, Grace Hopper) architectures on **CUDA 13.0** and **Python 3.12**.
+Docker configuration for building and running a containerized GR00T environment with all dependencies pre-installed. A single `Dockerfile` supports both x86_64 and aarch64 (GB200, Grace Hopper) architectures on **CUDA 13.0** and **Python 3.12** (package supports 3.10–3.14).
 
 ## Prerequisites
 
@@ -61,7 +61,7 @@ For full Spark usage instructions (inference, benchmarks, bare metal setup), see
 
 ### Orin Container (Jetson Orin / CUDA 13)
 
-The `gr00t-orin` image is built from `scripts/deployment/orin/Dockerfile` for Jetson Orin (JetPack 7.2+, CUDA 13, Python 3.12):
+The `gr00t-orin` image is built from `scripts/deployment/orin/Dockerfile` for Jetson Orin (JetPack 7.2+, CUDA 13, Python 3.10+):
 
 ```bash
 bash docker/build.sh --profile=orin

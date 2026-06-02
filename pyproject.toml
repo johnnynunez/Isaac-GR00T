@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gr00t"
 version = "0.1.0"
-requires-python = ">=3.12,<3.15"
+requires-python = ">=3.10,<3.15"
 dependencies = [
     "albumentations==2.0.8",
     "huggingface-hub==1.17.0",
@@ -18,7 +18,7 @@ dependencies = [
     "lmdb==2.2.0",
     "msgpack==1.1.2",
     "msgpack-numpy==0.4.8",
-    "pandas==3.0.3",
+    "pandas==2.2.3",
     "peft==0.19.1",
     "termcolor==3.3.0",
     "torch==2.12.0",
@@ -33,9 +33,11 @@ dependencies = [
     "jsonlines==4.0.0",
     "gymnasium==1.3.0",
     "matplotlib==3.10.9",
-    "numpy==2.4.6",
+    # 2.2.6 is the last numpy line with Python 3.10 wheels; 3.14+ needs >=2.3.3 (pandas/dm-tree).
+    "numpy==2.2.6; python_version < '3.14'",
+    "numpy==2.4.6; python_version >= '3.14'",
     "omegaconf==2.3.0",
-    "scipy==1.17.1",
+    "scipy==1.15.3",
     "torchcodec==0.13.0; sys_platform != 'win32' and (sys_platform != 'linux' or (platform_machine != 'aarch64' and platform_machine != 'arm64' and platform_machine != 'armv7l'))",
     "wandb==0.27.0",
     "pyzmq==27.1.0",
@@ -87,7 +89,7 @@ torchcodec = [
 ]
 
 [tool.uv.extra-build-dependencies]
-flash-attn = ["torch==2.12.0", "numpy==2.4.6", "triton==3.7.0"]
+flash-attn = ["torch==2.12.0", "numpy==2.2.6", "triton==3.7.0"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "tests"]
@@ -105,7 +107,7 @@ junit_duration_report = "total"
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py310"
 src = ["gr00t"]
 exclude = [
     "__pycache__",

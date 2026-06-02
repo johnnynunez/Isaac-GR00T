@@ -255,11 +255,11 @@ python gr00t/eval/rollout_policy.py \
 
 ## Platform-Specific Setup
 
-> Jetson and Spark use the [Jetson AI Lab cu130 index](https://pypi.jetson-ai-lab.io/sbsa/cu130) (PyTorch 2.12, CUDA 13). dGPU uses the [PyTorch cu130 index](https://download.pytorch.org/whl/cu130). All platforms target Python 3.12+.
+> Jetson and Spark use the [Jetson AI Lab cu130 index](https://pypi.jetson-ai-lab.io/sbsa/cu130) (PyTorch 2.12, CUDA 13). dGPU uses the [PyTorch cu130 index](https://download.pytorch.org/whl/cu130). All platforms support Python 3.10–3.14 (3.12 is the default CI target).
 
 ### Jetson Thor Setup
 
-Thor uses CUDA 13 and Python 3.12 from the Jetson cu130 index.
+Thor uses CUDA 13 and Python 3.10+ from the Jetson cu130 index.
 Tested with JetPack 7.2+.
 There are two ways to run on Thor: Docker (recommended) or bare metal.
 
@@ -327,7 +327,7 @@ and `torch.compile` need on Thor.
 
 ### DGX Spark Setup
 
-Spark uses CUDA 13 and Python 3.12 like Thor, but requires a dedicated dependency stack and
+Spark uses CUDA 13 and Python 3.10+ like Thor, but requires a dedicated dependency stack and
 source-built `flash-attn` for `sm121`. There are two ways to run on Spark: Docker (recommended)
 or bare metal.
 
@@ -397,7 +397,7 @@ Spark-specific `flash-attn` build is restored and revalidated.
 
 > **Note:** On Orin, only the DiT (action head) TRT export is currently supported. Use `--export-mode dit_only` instead of `full_pipeline`. Full pipeline support is in progress.
 
-Orin uses CUDA 13 and Python 3.12 (JetPack 7.2+) via the Jetson cu130 index — same PyTorch/Triton pins as Thor/Spark.
+Orin uses CUDA 13 and Python 3.10+ (JetPack 7.2+) via the Jetson cu130 index — same PyTorch/Triton pins as Thor/Spark.
 Tested with JetPack 7.2+.
 There are two ways to run on Orin: Docker (recommended) or bare metal.
 

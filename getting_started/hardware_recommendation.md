@@ -61,7 +61,7 @@ The table below summarizes end-to-end inference frequency across tested platform
 
 | Requirement | Version |
 |-------------|---------|
-| Python | 3.12–3.14 |
+| Python | 3.10–3.14 |
 | CUDA | 13.0 (all supported platforms) |
 | PyTorch | 2.12+ |
 | OS | Ubuntu 22.04+ (dGPU), JetPack 7.2+ (Orin), Ubuntu 24.04 (Thor, Spark) |

@@ -108,7 +108,7 @@ GR00T N1.7 builds on N1.6 with a new VLM backbone and code-level improvements.
 
 **Fine-tuning:** 1 or more GPUs with 40 GB+ VRAM recommended. We recommend H100 or L40 nodes for optimal performance. Other hardware (e.g., A6000) works but may require longer training time. See the [Hardware Recommendation Guide](getting_started/hardware_recommendation.md) for detailed specs.
 
-**CUDA / Python per platform:** Python 3.12–3.14 and CUDA 13.0 (PyTorch 2.12 + Triton 3.7) on dGPU, Jetson Orin (JetPack 7.2+), Thor, and DGX Spark. Per-platform install scripts and Dockerfiles live under `scripts/deployment/`; see the [Deployment & Inference Guide](scripts/deployment/README.md) for the full matrix.
+**CUDA / Python per platform:** Python 3.10–3.14 and CUDA 13.0 (PyTorch 2.12 + Triton 3.7) on dGPU, Jetson Orin (JetPack 7.2+), Thor, and DGX Spark. Per-platform install scripts and Dockerfiles live under `scripts/deployment/`; see the [Deployment & Inference Guide](scripts/deployment/README.md) for the full matrix.
 
 ### Clone the Repository
 
@@ -143,7 +143,7 @@ sudo apt-get update && sudo apt-get install -y ffmpeg
 
 Create the environment and install GR00T:
 ```sh
-uv sync --python 3.12
+uv sync --python 3.12  # any 3.10–3.14 interpreter works; 3.12 is the default CI target
 ```
 On Linux, `scripts/deployment/dgpu/install_deps.sh` also installs TensorRT from NVIDIA PyPI. `flash-attn` builds from source on x86_64; Jetson platforms resolve it from the Jetson AI Lab cu130 index.
 
@@ -155,9 +155,9 @@ uv run python -c "import gr00t; print('GR00T installed successfully')"
 <details>
 <summary><strong>Alternative: pip install (without uv)</strong></summary>
 
-If you prefer pip/conda over uv, create a Python 3.12 virtualenv and install:
+If you prefer pip/conda over uv, create a Python 3.10+ virtualenv and install:
 ```sh
-python3.12 -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
 Note: GPU dependencies (flash-attn, TensorRT) may require manual installation with pip. Prefer `bash scripts/deployment/dgpu/install_deps.sh` on Linux.

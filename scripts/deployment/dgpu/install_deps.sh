@@ -67,7 +67,7 @@ fi
 
 cd "$REPO_ROOT"
 
-echo "Running uv sync (torch==2.12.0+cu130 from pytorch-cu130 index, Python 3.12+)..."
+echo "Running uv sync (torch==2.12.0+cu130 from pytorch-cu130 index, Python 3.12)..."
 uv sync --python 3.12
 
 echo "Installing package in editable mode..."
