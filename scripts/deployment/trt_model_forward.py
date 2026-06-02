@@ -241,7 +241,13 @@ def qwen3_backbone_tensorrt_forward(self, vl_input):
     """
     self.set_frozen_modules_to_eval_mode()
 
-    keys_to_use = ["input_ids", "attention_mask", "pixel_values", "image_grid_thw"]
+    keys_to_use = [
+        "input_ids",
+        "attention_mask",
+        "pixel_values",
+        "image_grid_thw",
+        "mm_token_type_ids",
+    ]
     vl_input = {k: vl_input[k] for k in keys_to_use}
 
     prepared = _qwen3_vit_and_scatter(self, vl_input)
@@ -277,7 +283,13 @@ def qwen3_backbone_llm_trt_forward(self, vl_input):
     """
     self.set_frozen_modules_to_eval_mode()
 
-    keys_to_use = ["input_ids", "attention_mask", "pixel_values", "image_grid_thw"]
+    keys_to_use = [
+        "input_ids",
+        "attention_mask",
+        "pixel_values",
+        "image_grid_thw",
+        "mm_token_type_ids",
+    ]
     vl_input = {k: vl_input[k] for k in keys_to_use}
 
     # Run PyTorch ViT + scatter + rope (original backbone logic up to LLM)
@@ -379,7 +391,13 @@ def qwen3_backbone_full_trt_forward(self, vl_input):
     """
     self.set_frozen_modules_to_eval_mode()
 
-    keys_to_use = ["input_ids", "attention_mask", "pixel_values", "image_grid_thw"]
+    keys_to_use = [
+        "input_ids",
+        "attention_mask",
+        "pixel_values",
+        "image_grid_thw",
+        "mm_token_type_ids",
+    ]
     vl_input = {k: vl_input[k] for k in keys_to_use}
 
     prepared = _qwen3_vit_and_scatter(self, vl_input)
