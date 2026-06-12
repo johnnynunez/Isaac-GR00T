@@ -37,9 +37,9 @@ dependencies = [
     # 2.2.6 on Python <3.14; 2.4.6 on 3.14+ (dm-tree / pandas pins on 3.14).
     "numpy==2.2.6; python_version < '3.14'",
     "numpy==2.4.6; python_version >= '3.14'",
-    "omegaconf==2.3.0",
+    "omegaconf==2.3.1",
     "scipy==1.17.1",
-    "torchcodec==0.13.0; sys_platform != 'win32' and (sys_platform != 'linux' or (platform_machine != 'aarch64' and platform_machine != 'arm64' and platform_machine != 'armv7l'))",
+    "torchcodec==0.14.0; sys_platform != 'win32' and (sys_platform != 'linux' or (platform_machine != 'aarch64' and platform_machine != 'arm64' and platform_machine != 'armv7l'))",
     "wandb==0.27.2",
     "pyzmq==27.1.0",
     # deepspeed publishes wheels only for x86_64 Linux.
@@ -47,7 +47,7 @@ dependencies = [
     # triton is needed on aarch64 (GB200) but ships with torch on x86_64
     "triton==3.7.0; sys_platform == 'linux' and platform_machine == 'aarch64'",
     # flash-attn: x86_64 builds from sdist; aarch64 via jetson index at deploy time (see install scripts).
-    "flash-attn==2.8.3; sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "flash-attn==2.8.3.post1; sys_platform == 'linux' and platform_machine == 'x86_64'",
     "onnx==1.21.0",
     "onnxscript==0.7.0",
 ]

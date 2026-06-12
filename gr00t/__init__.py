@@ -52,17 +52,24 @@ def _torch_dtype_from_arg(dtype):
 
 
 @contextmanager
-def _no_init_weights():
+def _no_init_weights(use_meta_device: bool = True):
     """Skip random weight initialization during module construction.
 
     transformers<=4.x exposed ``no_init_weights``; transformers 5.x removed it.
     Prefer accelerate's ``init_empty_weights`` when available, otherwise patch
     ``torch.nn.init`` callables for the duration of the context.
+
+    ``use_meta_device=False`` forces the ``torch.nn.init`` patching fallback.
+    This is needed when the model constructor itself calls ``from_pretrained``
+    (e.g. to load a VLM backbone): transformers >= 5.10 raises a RuntimeError
+    if ``from_pretrained`` runs under a meta-device context manager.
     """
-    try:
-        from accelerate import init_empty_weights
-    except ImportError:
-        init_empty_weights = None
+    init_empty_weights = None
+    if use_meta_device:
+        try:
+            from accelerate import init_empty_weights
+        except ImportError:
+            init_empty_weights = None
 
     if init_empty_weights is not None:
         with init_empty_weights():
@@ -232,7 +239,9 @@ def _hf_no_weight_model_call(orig_func, klass, pretrained_model_name_or_path, *a
         previous_dtype = torch.get_default_dtype()
         torch.set_default_dtype(torch_dtype)
     try:
-        with _no_init_weights():
+        # use_meta_device=False: GR00T constructors call from_pretrained for the
+        # VLM backbone, which transformers >= 5.10 forbids under a meta context.
+        with _no_init_weights(use_meta_device=False):
             model = klass(config, *args, **model_kwargs)
     finally:
         if previous_dtype is not None:

@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import nullcontext
 import logging
 
 import torch
@@ -20,6 +21,25 @@ from transformers.feature_extraction_utils import BatchFeature
 
 
 logger = logging.getLogger(__name__)
+
+
+def _escape_meta_device_context():
+    """Return a context manager that neutralizes an active meta-device context.
+
+    transformers >= 5.10 builds the outer model under ``torch.device("meta")``
+    during ``from_pretrained`` and raises if a nested ``from_pretrained`` (our
+    VLM backbone load) runs inside that context. Nesting ``torch.device("cpu")``
+    overrides the meta context for the duration of the backbone load; the
+    weights are subsequently replaced by the outer checkpoint load.
+    """
+    try:
+        from transformers.modeling_utils import get_torch_context_manager_or_global_device
+
+        if get_torch_context_manager_or_global_device() == torch.device("meta"):
+            return torch.device("cpu")
+    except ImportError:
+        pass
+    return nullcontext()
 
 
 try:
@@ -77,11 +97,12 @@ class Qwen3Backbone(torch.nn.Module):
         if load_bf16:
             extra_kwargs["torch_dtype"] = torch.bfloat16
 
-        self.model = Qwen3VLForConditionalGeneration.from_pretrained(
-            model_name,
-            **extra_kwargs,
-            **transformers_loading_kwargs,
-        ).eval()
+        with _escape_meta_device_context():
+            self.model = Qwen3VLForConditionalGeneration.from_pretrained(
+                model_name,
+                **extra_kwargs,
+                **transformers_loading_kwargs,
+            ).eval()
         inner = self.model.model
 
         # needed since we don't use these layers. Also saves compute

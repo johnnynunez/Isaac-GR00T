@@ -45,6 +45,7 @@ import tqdm
 if __package__ is None or __package__ == "":
     sys.path.append(str(Path(__file__).resolve().parents[3]))
 try:
+    from lerobot.datasets.io_utils import load_info, load_tasks, write_info
     from lerobot.datasets.utils import (
         DEFAULT_CHUNK_SIZE,
         DEFAULT_DATA_PATH,
@@ -53,11 +54,8 @@ try:
         LEGACY_EPISODES_PATH,
         LEGACY_EPISODES_STATS_PATH,
         LEGACY_TASKS_PATH,
-        load_info,
-        load_tasks,
         serialize_dict,
         unflatten_dict,
-        write_info,
     )
     from lerobot.utils.constants import HF_LEROBOT_HOME
     from lerobot.utils.utils import init_logging
