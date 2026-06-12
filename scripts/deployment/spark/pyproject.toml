@@ -8,12 +8,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gr00t"
 version = "0.1.0"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12,<3.15"
 dependencies = [
     "albumentations==2.0.8",
     "av==17.1.0",
-    "diffusers==0.36.0.dev0",
-    "dm-tree==0.1.8",
+    "diffusers==0.38.0",
+    "dm-tree==0.1.10",
     "huggingface-hub==1.19.0",
     "jsonlines==4.0.0",
     "lmdb==2.2.1",
@@ -23,9 +23,9 @@ dependencies = [
     "pandas==2.2.3",
     "peft==0.19.1",
     "termcolor==3.3.0",
-    "torch==2.11.0",
-    "triton==3.6.0",
-    "torchvision==0.25.0",
+    "torch==2.12.0",
+    "triton==3.7.0",
+    "torchvision==0.27.0",
     "transformers==5.11.0",
     "tyro==1.0.13",
     "click==8.4.1",
@@ -41,13 +41,13 @@ dependencies = [
     "scipy==1.17.1",
     "wandb==0.27.2",
     "pyzmq==27.1.0",
-    "torchcodec==0.10.0",
+    "torchcodec==0.14.0",
     "onnx==1.21.0",
     "onnxscript==0.7.0",
     "tensorrt>=10.14.1.48.post1",
     "nvidia-cudnn-cu13",
     "nvidia-cudss-cu13",
-    "flash-attn==2.8.4",
+    "flash-attn==2.8.3",
 ]
 
 [project.optional-dependencies]
@@ -68,15 +68,13 @@ include = ["gr00t*"]
 prerelease = "allow"
 
 [tool.uv.extra-build-dependencies]
-flash-attn = ["torch==2.11.0", "numpy==2.2.6", "triton==3.6.0"]
+flash-attn = ["torch==2.12.0", "numpy==2.2.6", "triton==3.7.0"]
 
 [tool.uv.sources]
-torch = [{ index = "jetson-sbsa-cu130" }]
-torchvision = [{ index = "jetson-sbsa-cu130" }]
-torchcodec = [{ index = "jetson-sbsa-cu130" }]
-triton = [{ index = "jetson-sbsa-cu130" }]
-flash-attn = [{ index = "jetson-sbsa-cu130" }]
-diffusers = [{ index = "jetson-sbsa-cu130" }]
+torch = [{ index = "pytorch-cu130" }]
+torchvision = [{ index = "pytorch-cu130" }]
+torchcodec = [{ index = "pytorch-cu130" }]
+triton = [{ index = "pytorch-cu130" }]
 
 [[tool.uv.index]]
 name = "nvidia-pypi"
@@ -84,6 +82,6 @@ url = "https://pypi.nvidia.com"
 explicit = true
 
 [[tool.uv.index]]
-name = "jetson-sbsa-cu130"
-url = "https://pypi.jetson-ai-lab.io/sbsa/cu130/+simple"
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
 explicit = true
