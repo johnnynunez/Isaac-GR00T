@@ -774,9 +774,7 @@ class Gr00tN1d7Processor(BaseProcessor):
 
             def _resolve_hub_file(filename: str) -> Path:
                 if cached_file is not None:
-                    return Path(
-                        cached_file(pretrained_model_name_or_path, filename, **hub_kwargs)
-                    )
+                    return Path(cached_file(pretrained_model_name_or_path, filename, **hub_kwargs))
                 if hf_hub_download is None:
                     raise ImportError(
                         "huggingface_hub is required to load processor files from the Hub."

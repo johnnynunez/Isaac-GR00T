@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from contextlib import contextmanager
+import os
 
 
 _FALSEY_ENV_VALUES = {"", "0", "false", "no", "off"}
@@ -90,9 +90,12 @@ def _materialize_meta_model(model, *, device, dtype):
     """Move meta-device parameters from init_empty_weights onto a real device."""
     import torch
 
+    parameters = getattr(model, "parameters", None)
+    if not callable(parameters):
+        return model
+
     if not any(
-        getattr(p, "device", None) is not None and p.device.type == "meta"
-        for p in model.parameters()
+        getattr(p, "device", None) is not None and p.device.type == "meta" for p in parameters()
     ):
         return model
 

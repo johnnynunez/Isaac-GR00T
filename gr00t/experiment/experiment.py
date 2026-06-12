@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import asdict, is_dataclass
 import json
 import logging
 import os
-from dataclasses import asdict, is_dataclass
 from pathlib import Path
 import warnings
 
@@ -216,7 +216,6 @@ def run(config: Config):
 
     save_cfg_dir = output_dir / "experiment_cfg"
     processor_dir = output_dir / "processor"
-
 
     # Rank-0-only write; wrapped so a rank-0 failure surfaces on every rank
     # instead of stranding peers at the next NCCL collective.
