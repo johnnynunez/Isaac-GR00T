@@ -181,6 +181,13 @@ source scripts/activate_spark.sh
 See the [Spark setup guide](scripts/deployment/README.md#dgx-spark-setup) for Docker and bare metal details.
 </details>
 
+> ⚠️ **aarch64 users (Spark):** After running `install_deps.sh`, always
+> activate the venv with `source .venv/bin/activate && source scripts/activate_spark.sh`
+> and invoke training with **plain `python`**, not `uv run python`. The latter will
+> re-sync against the root `pyproject.toml` (which targets x86_64 Python 3.10) and
+> destroy the platform-specific environment.
+
+
 <details>
 <summary><strong>Jetson AGX Thor</strong> (tested with JetPack 7.2+)</summary>
 
@@ -198,6 +205,13 @@ source scripts/activate_thor.sh
 See the [Thor setup guide](scripts/deployment/README.md#jetson-thor-setup) for Docker and bare metal details.
 </details>
 
+> ⚠️ **aarch64 users (Thor):** After running `install_deps.sh`, always
+> activate the venv with `source .venv/bin/activate && source scripts/activate_thor.sh`
+> and invoke training with **plain `python`**, not `uv run python`. The latter will
+> re-sync against the root `pyproject.toml` (which targets x86_64 Python 3.10) and
+> destroy the platform-specific environment.
+
+
 <details>
 <summary><strong>Jetson Orin</strong> (tested with JetPack 7.2+)</summary>
 
@@ -209,6 +223,13 @@ source scripts/activate_orin.sh
 
 See the [Orin setup guide](scripts/deployment/README.md#jetson-orin-setup) for Docker and bare metal details.
 </details>
+
+> ⚠️ **aarch64 users (Orin):** After running `install_deps.sh`, always
+> activate the venv with `source .venv/bin/activate && source scripts/activate_orin.sh`
+> and invoke training with **plain `python`**, not `uv run python`. The latter will
+> re-sync against the root `pyproject.toml` (which targets x86_64 Python 3.10) and
+> destroy the platform-specific environment.
+
 
 For a containerized setup that avoids system-level dependency conflicts, see our [Docker Setup Guide](docker/README.md).
 
@@ -266,7 +287,15 @@ The `modality.json` maps how the concatenated state/action arrays split into nam
 
 > To generate more DROID episodes: `python scripts/download_droid_sample.py --num-episodes 10`
 
-**Using your own data:** Convert your demonstrations to the format above. If coming from LeRobot v3, use the conversion script: `python scripts/lerobot_conversion/convert_v3_to_v2.py`. See the full [Data Preparation Guide](getting_started/data_preparation.md) for schema details and examples.
+**Using your own data:** Convert your demonstrations to the format above. If coming from LeRobot v3, use the conversion helper in its own environment:
+```bash
+cd scripts/lerobot_conversion
+uv venv
+source .venv/bin/activate
+uv pip install -e . --verbose
+python convert_v3_to_v2.py --repo-id <DATASET_REPO_ID>
+```
+See the full [Data Preparation Guide](getting_started/data_preparation.md) for schema details and examples.
 
 ---
 
@@ -287,6 +316,8 @@ uv run python scripts/deployment/standalone_inference_script.py \
 ```
 
 This runs open-loop inference on 2 DROID episodes, comparing predicted actions against ground truth. The base model downloads automatically from HuggingFace on first run (~6 GB).
+
+The standalone inference script defaults to the `ffmpeg` video backend so this demo works on systems with newer FFmpeg releases. If you explicitly use `--video-backend torchcodec`, make sure your installed `torchcodec` wheel is compatible with your system FFmpeg version.
 
 ### Finetuned Inference
 
@@ -509,6 +540,18 @@ To add a new benchmark:
 
 ---
 
+## Running Tests
+
+Install the development dependencies before running the test suite:
+```bash
+uv sync --python 3.10 --extra dev
+uv run python -m pytest
+```
+
+Use targeted test paths for faster local checks, and reserve GPU-marked tests for machines with the required CUDA hardware.
+
+---
+
 # Contributions
 
 During Early Access we are not accepting pull requests while the codebase stabilizes. If you encounter issues or have suggestions, please open an [Issue](https://github.com/NVIDIA/Isaac-GR00T/issues) in this repository.
@@ -555,4 +598,3 @@ Support during Early Access is best-effort. We will continue iterating toward a 
   booktitle  = {ArXiv Preprint},
 }
 ```
-
